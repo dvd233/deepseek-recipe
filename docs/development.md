@@ -110,6 +110,24 @@ For an installation without editable development, use:
 python3 -m pip install ./deepseek-recipe-python
 ```
 
+## Source distribution
+
+The release workflow publishes a source distribution alongside the wheels so
+`pip` has an artifact to build when no wheel matches the user's platform. To
+reproduce the source artifact locally:
+
+```sh
+maturin sdist \
+  --manifest-path deepseek-recipe-python/Cargo.toml \
+  --out dist-sdist
+twine check dist-sdist/*
+```
+
+The command packages the workspace crates and Python sources needed to build
+the extension. The PyPI publishing job uses trusted publishing and runs when a
+GitHub release is published; configure the `pypi` environment and the
+`deepseek-recipe` trusted publisher before the first release.
+
 ## Wheel packaging
 
 The extension links OpenCV dynamically, so a wheel is only installable on a
