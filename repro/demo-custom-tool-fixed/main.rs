@@ -272,8 +272,7 @@ where
         body.entry("model")
             .or_insert_with(|| "encoding-decoding-demo".into());
     }
-    serde_json::from_value(body)
-        .map_err(|err| bad_request(format!("invalid request body: {err}")))
+    serde_json::from_value(body).map_err(|err| bad_request(format!("invalid request body: {err}")))
 }
 
 fn convert_request<T>(body: serde_json::Value) -> Result<ConversationRequest, DemoError>

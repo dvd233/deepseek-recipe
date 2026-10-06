@@ -1,8 +1,9 @@
-use super::{decode_handler, ApiFormat, DecodeFinishReason, DecodeRequest};
+use super::{ApiFormat, DecodeFinishReason, DecodeRequest, decode_handler};
 use axum::Json;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
-const PATCH_INPUT: &str = "*** Begin Patch\n*** Add File: hello.txt\n+Hello, 世界 😀\n*** End Patch";
+const PATCH_INPUT: &str =
+    "*** Begin Patch\n*** Add File: hello.txt\n+Hello, 世界 😀\n*** End Patch";
 
 fn model_output() -> String {
     format!(
@@ -49,8 +50,13 @@ async fn responses_custom_tool_keeps_native_input() {
     .await;
     eprintln!("native-demo-response: {response}");
     let call = named_output(&response);
-    let actual_type = call["type"].as_str().expect("tool call type must be a string");
-    assert_eq!(actual_type, "custom_tool_call", "CUSTOM_TOOL_TYPE_MISMATCH: demo must retain the Responses custom tool declaration");
+    let actual_type = call["type"]
+        .as_str()
+        .expect("tool call type must be a string");
+    assert_eq!(
+        actual_type, "custom_tool_call",
+        "CUSTOM_TOOL_TYPE_MISMATCH: demo must retain the Responses custom tool declaration"
+    );
     assert_eq!(call["input"], PATCH_INPUT);
     assert!(call.get("arguments").is_none());
 }
@@ -85,7 +91,8 @@ async fn control_chat_completions_keeps_function_arguments() {
     let call = &response["choices"][0]["message"]["tool_calls"][0];
     assert_eq!(call["type"], "function");
     assert_eq!(call["function"]["name"], "apply_patch");
-    let arguments: Value = serde_json::from_str(call["function"]["arguments"].as_str().unwrap()).unwrap();
+    let arguments: Value =
+        serde_json::from_str(call["function"]["arguments"].as_str().unwrap()).unwrap();
     assert_eq!(arguments["input"], PATCH_INPUT);
 }
 

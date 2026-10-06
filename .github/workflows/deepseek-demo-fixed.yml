@@ -37,10 +37,11 @@ jobs:
           test "$GITHUB_EVENT_NAME" = push
           test "$GITHUB_REF" = refs/heads/repro/demo-custom-tool-fixed-20261006
           test "$(git -C proposal rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git -C proposal cat-file -p HEAD | awk '/^parent / { print $2 }')" = 76aab440ed30830d5e060ed70e62c75c208d8583
           printf '%s  %s\n' \
-            'd9c693b9e975219aaedfce2514819217ce9115466c8dc53e89909f69c37fc8a3' 'proposal/repro/demo-custom-tool-fixed/decode_custom_tool_regression.rs' \
-            '73285e17ee00214cc6bc2dd8b042ae7929d39c38b963ae1606a504f613e14368' 'proposal/repro/demo-custom-tool-fixed/run-fixed.sh' \
-            '8bd8534719710fdb57788a7619f7dd032bc47ffc9c141d45c7ba66772c5115de' 'proposal/repro/demo-custom-tool-fixed/main.rs' \
+            '7c2017110cc500536bfa66bfff3eb1b7c49865d6a18e6972213126846a77da3e' 'proposal/repro/demo-custom-tool-fixed/decode_custom_tool_regression.rs' \
+            'c6ceff98d4cdce70c38c0b6ad704183bc789cf069c2bfc778a3d8ccce34b2b3f' 'proposal/repro/demo-custom-tool-fixed/run-fixed.sh' \
+            '8dc5631dedfeff6130b3aea7de2fb6385ca0fbd073814266b5d0f2702ddb546e' 'proposal/repro/demo-custom-tool-fixed/main.rs' \
             | sha256sum --check --strict
       - name: Check out immutable original upstream
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
