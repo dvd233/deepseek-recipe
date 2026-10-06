@@ -108,3 +108,47 @@ async fn control_messages_keeps_tool_input() {
     assert_eq!(call["name"], "apply_patch");
     assert_eq!(call["input"]["input"], PATCH_INPUT);
 }
+
+#[tokio::test]
+async fn responses_stream_request_still_returns_complete_custom_tool_call() {
+    let response = decode(
+        ApiFormat::Responses,
+        json!({
+            "input": "Create hello.txt",
+            "stream": true,
+            "tools": [{"type": "custom", "name": "apply_patch"}]
+        }),
+    )
+    .await;
+    assert_eq!(response["object"], "response");
+    assert_eq!(response["status"], "completed");
+    let call = named_output(&response);
+    assert_eq!(call["type"], "custom_tool_call");
+    assert_eq!(call["input"], PATCH_INPUT);
+}
+
+#[tokio::test]
+async fn responses_custom_input_preserves_metadata_names_and_escapes() {
+    let input = "*** Begin Patch\n*** Add File: metadata.json\n+{\"id\":\"keep\",\"model\":\"literal\",\"usage\":7,\"status\":\"ready\",\"input\":\"C:\\\\work\"}\n+世界 😀\n*** End Patch";
+    let output = format!(
+        "<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"apply_patch\">\n<｜DSML｜ parameter name=\"input\" string=\"true\">{input}</｜DSML｜ parameter>\n</｜DSML｜ invoke>\n</｜DSML｜ calls>"
+    );
+    let result = decode_handler(Json(DecodeRequest {
+        format: ApiFormat::Responses,
+        body: json!({
+            "input": "Create metadata.json",
+            "tools": [{"type": "custom", "name": "apply_patch"}]
+        }),
+        output,
+        finish_reason: DecodeFinishReason::Stop,
+    }))
+    .await;
+    let response = match result {
+        Ok(Json(payload)) => payload.response,
+        Err((status, _)) => panic!("demo handler unexpectedly rejected fixture with {status}"),
+    };
+    let call = named_output(&response);
+    assert_eq!(call["type"], "custom_tool_call");
+    assert_eq!(call["input"], input);
+    assert!(call.get("arguments").is_none());
+}

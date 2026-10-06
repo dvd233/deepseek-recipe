@@ -1,19 +1,19 @@
-name: DeepSeek demo native baseline
+name: DeepSeek demo native fixed validation
 on:
   push:
-    branches: [repro/demo-custom-tool-baseline-20261006]
+    branches: [repro/demo-custom-tool-fixed-20261006]
 permissions:
   contents: read
 concurrency:
-  group: deepseek-demo-baseline-${{ github.ref }}
+  group: deepseek-demo-fixed-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  native-baseline:
+  native-fixed:
     if: >-
       github.repository == 'dvd233/deepseek-recipe' &&
       github.repository_owner_id == '111864431' &&
       github.event_name == 'push' &&
-      github.ref == 'refs/heads/repro/demo-custom-tool-baseline-20261006'
+      github.ref == 'refs/heads/repro/demo-custom-tool-fixed-20261006'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
@@ -35,11 +35,12 @@ jobs:
           set -euo pipefail
           test "$GITHUB_REPOSITORY" = dvd233/deepseek-recipe
           test "$GITHUB_EVENT_NAME" = push
-          test "$GITHUB_REF" = refs/heads/repro/demo-custom-tool-baseline-20261006
+          test "$GITHUB_REF" = refs/heads/repro/demo-custom-tool-fixed-20261006
           test "$(git -C proposal rev-parse HEAD)" = "$GITHUB_SHA"
           printf '%s  %s\n' \
-            '262022fc069f9b3a574ad282dbc751ca70f91c01896dc13651cb4778b1ec24cb' 'proposal/repro/demo-custom-tool/decode_custom_tool_regression.rs' \
-            '58072e2297e4ad5c26667b542a2e125ee050e35b66791146bc0c8992b807c655' 'proposal/repro/demo-custom-tool/run-baseline.sh' \
+            'd9c693b9e975219aaedfce2514819217ce9115466c8dc53e89909f69c37fc8a3' 'proposal/repro/demo-custom-tool-fixed/decode_custom_tool_regression.rs' \
+            '73285e17ee00214cc6bc2dd8b042ae7929d39c38b963ae1606a504f613e14368' 'proposal/repro/demo-custom-tool-fixed/run-fixed.sh' \
+            '8bd8534719710fdb57788a7619f7dd032bc47ffc9c141d45c7ba66772c5115de' 'proposal/repro/demo-custom-tool-fixed/main.rs' \
             | sha256sum --check --strict
       - name: Check out immutable original upstream
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -49,14 +50,14 @@ jobs:
           path: upstream
           persist-credentials: false
       - name: Install repository-pinned minimal official Rust toolchain
-        run: rustup toolchain install 1.97.1 --profile minimal --no-self-update
-      - name: Prove native handler baseline and negative controls
-        run: bash "$GITHUB_WORKSPACE/proposal/repro/demo-custom-tool/run-baseline.sh" "$GITHUB_WORKSPACE/upstream" "$GITHUB_WORKSPACE/proposal/repro/demo-custom-tool"
+        run: rustup toolchain install 1.97.1 --profile minimal --component rustfmt --component clippy --no-self-update
+      - name: Verify fixed native handler, clippy, and format
+        run: bash "$GITHUB_WORKSPACE/proposal/repro/demo-custom-tool-fixed/run-fixed.sh" "$GITHUB_WORKSPACE/upstream" "$GITHUB_WORKSPACE/proposal/repro/demo-custom-tool-fixed"
       - name: Keep exact verification evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: deepseek-demo-native-baseline
+          name: deepseek-demo-native-fixed
           path: upstream/evidence/
           if-no-files-found: error
           retention-days: 7
