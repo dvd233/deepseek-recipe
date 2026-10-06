@@ -1,0 +1,62 @@
+name: DeepSeek demo native baseline
+on:
+  push:
+    branches: [repro/demo-custom-tool-baseline-20261006]
+permissions:
+  contents: read
+concurrency:
+  group: deepseek-demo-baseline-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  native-baseline:
+    if: >-
+      github.repository == 'dvd233/deepseek-recipe' &&
+      github.repository_owner_id == '111864431' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/repro/demo-custom-tool-baseline-20261006'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_BUILD_JOBS: '2'
+      CARGO_TERM_COLOR: never
+    steps:
+      - name: Check out exact reviewed proposal commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          path: proposal
+          persist-credentials: false
+      - name: Verify proposal identity and reviewed payload hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = dvd233/deepseek-recipe
+          test "$GITHUB_EVENT_NAME" = push
+          test "$GITHUB_REF" = refs/heads/repro/demo-custom-tool-baseline-20261006
+          test "$(git -C proposal rev-parse HEAD)" = "$GITHUB_SHA"
+          printf '%s  %s\n' \
+            '262022fc069f9b3a574ad282dbc751ca70f91c01896dc13651cb4778b1ec24cb' 'proposal/repro/demo-custom-tool/decode_custom_tool_regression.rs' \
+            '58072e2297e4ad5c26667b542a2e125ee050e35b66791146bc0c8992b807c655' 'proposal/repro/demo-custom-tool/run-baseline.sh' \
+            | sha256sum --check --strict
+      - name: Check out immutable original upstream
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: deepseek-ai/deepseek-recipe
+          ref: 8cadfede7063c896b944e7bae05daa3549ae97ea
+          path: upstream
+          persist-credentials: false
+      - name: Install repository-pinned minimal official Rust toolchain
+        run: rustup toolchain install 1.97.1 --profile minimal --no-self-update
+      - name: Prove native handler baseline and negative controls
+        run: bash "$GITHUB_WORKSPACE/proposal/repro/demo-custom-tool/run-baseline.sh" "$GITHUB_WORKSPACE/upstream" "$GITHUB_WORKSPACE/proposal/repro/demo-custom-tool"
+      - name: Keep exact verification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: deepseek-demo-native-baseline
+          path: upstream/evidence/
+          if-no-files-found: error
+          retention-days: 7
